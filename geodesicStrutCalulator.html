@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Geodesic Strut Calculator</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Arial, sans-serif;
+        background: linear-gradient(
+          180deg,
+          #071022 0%,
+          #071026 40%,
+          #07102a 100%
+        );
+        color: #e6eef8;
+        min-height: 100vh;
+        padding: 16px;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .card {
+        background: #06121a;
+        border: 1px solid #1a2332;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 24px;
+      }
+
+      h1 {
+        font-size: 28px;
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+
+      .subtitle {
+        color: #9fb0c8;
+        font-size: 14px;
+        margin-bottom: 16px;
+      }
+
+      .input-group {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+
+      .input-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      label {
+        font-size: 14px;
+        font-weight: 500;
+        color: #9fb0c8;
+      }
+
+      input,
+      select {
+        background: #0a1929;
+        border: 1px solid #1a2332;
+        border-radius: 6px;
+        padding: 10px 12px;
+        color: #e6eef8;
+        font-size: 14px;
+        font-family: inherit;
+      }
+
+      input:focus,
+      select:focus {
+        outline: none;
+        border-color: #4f46e5;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-top: 16px;
+      }
+
+      button {
+        background: transparent;
+        border: 1px solid #4f46e5;
+        color: #4f46e5;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: inherit;
+        transition: all 0.2s;
+      }
+
+      button:hover:not(:disabled) {
+        background: #4f46e522;
+      }
+
+      button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .status {
+        margin-left: auto;
+        padding: 6px 12px;
+        border: 1px solid #1a2332;
+        border-radius: 16px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 16px;
+        font-size: 14px;
+      }
+
+      th,
+      td {
+        text-align: left;
+        padding: 10px;
+        border-bottom: 1px solid #1a2332;
+      }
+
+      th {
+        font-weight: 600;
+        color: #9fb0c8;
+      }
+
+      code {
+        background: #0a1929;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: "Courier New", monospace;
+        font-size: 13px;
+      }
+
+      #canvas {
+        width: 100%;
+        height: 420px;
+        background: #0a1929;
+        border-radius: 8px;
+        cursor: grab;
+        touch-action: none;
+      }
+
+      #canvas:active {
+        cursor: grabbing;
+      }
+
+      .controls {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-top: 16px;
+      }
+
+      .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+      }
+
+      input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+      }
+
+      .legend {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: #9fb0c8;
+      }
+
+      .strut-colors {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+      }
+
+      .strut-color {
+        width: 16px;
+        height: 4px;
+        border-radius: 2px;
+      }
+
+      .fullscreen-btn {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        background: #4f46e5;
+        border: none;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .fullscreen-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: #071022;
+        z-index: 1000;
+        flex-direction: column;
+      }
+
+      .fullscreen-modal.active {
+        display: flex;
+      }
+
+      .modal-header {
+        background: #4f46e5;
+        padding: 16px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .modal-content {
+        flex: 1;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        overflow: auto;
+      }
+
+      #fullscreenCanvas {
+        flex: 1;
+        background: #0a1929;
+        border-radius: 8px;
+        cursor: grab;
+        touch-action: none;
+      }
+
+      @media (max-width: 640px) {
+        .input-group {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <h1>Geodesic Strut Calculator</h1>
+        <p class="subtitle">
+          Size outer and inner struts for wood panels that butt along beveled
+          edges. Enter an outer diameter, panel thickness, and frequency to see
+          matching strut lengths and bevels.
+        </p>
+
+        <div class="input-group">
+          <div class="input-field">
+            <label for="outerDiameter">Outer diameter</label>
+            <input
+              type="number"
+              id="outerDiameter"
+              value="24"
+              step="0.001"
+              min="0"
+            />
+          </div>
+          <div class="input-field">
+            <label for="unit">Units</label>
+            <select id="unit">
+              <option value="ft">feet</option>
+              <option value="in">inches</option>
+              <option value="m">meters</option>
+              <option value="mm">millimeters</option>
+            </select>
+          </div>
+          <div class="input-field">
+            <label for="thickness">Wall thickness</label>
+            <input
+              type="number"
+              id="thickness"
+              value="0.125"
+              step="0.001"
+              min="0"
+            />
+          </div>
+          <div class="input-field">
+            <label for="frequency">Frequency</label>
+            <input
+              type="number"
+              id="frequency"
+              value="4"
+              min="1"
+              max="10"
+              step="1"
+            />
+          </div>
+          <div class="input-field">
+            <label for="cut">Dome cut</label>
+            <select id="cut">
+              <option value="hemisphere">Hemisphere (z ≥ 0)</option>
+              <option value="full">Full sphere</option>
+            </select>
+          </div>
+          <div class="input-field">
+            <label for="tolerance"
+              >Grouping tolerance (<span id="toleranceUnit">ft</span>)</label
+            >
+            <input
+              type="number"
+              id="tolerance"
+              value="0.001"
+              step="0.0001"
+              min="0"
+            />
+          </div>
+        </div>
+
+        <div class="button-group">
+          <button id="downloadStruts">Download struts CSV</button>
+          <button id="downloadPanels">Download panels CSV</button>
+          <div class="status" id="status">Ready</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 8px">
+          Strut types (outer / inner)
+        </h2>
+        <p class="subtitle" id="strutSummary">
+          Enter inputs to see strut summary.
+        </p>
+        <div id="strutTable"></div>
+      </div>
+
+      <div class="card">
+        <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 8px">
+          Triangle panels
+        </h2>
+        <p class="subtitle" id="panelSummary">
+          Enter inputs to see panel groupings.
+        </p>
+        <div id="panelTable"></div>
+      </div>
+
+      <div class="card" style="position: relative">
+        <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 16px">
+          3D visualization • outer & inner struts
+        </h2>
+        <button class="fullscreen-btn" id="openFullscreen">⛶ Fullscreen</button>
+        <canvas id="canvas"></canvas>
+        <div class="controls">
+          <button id="resetView">Reset view</button>
+          <button id="topView">Top view</button>
+          <button id="sideView">Side view</button>
+          <label class="checkbox-label">
+            <input type="checkbox" id="showOuter" checked />
+            <span>Show outer struts</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="showInner" checked />
+            <span>Show inner struts</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="showVertices" checked />
+            <span>Show vertices</span>
+          </label>
+        </div>
+        <div class="legend" id="legend"></div>
+        <p class="subtitle" style="margin-top: 16px">
+          Drag to rotate, scroll to zoom. Warm colors show outer struts, cool
+          colors show inner struts for each type; use the toggles above to focus
+          on a layer.
+        </p>
+      </div>
+    </div>
+
+    <div class="fullscreen-modal" id="fullscreenModal">
+      <div class="modal-header">
+        <h2 style="font-size: 20px; font-weight: 600">
+          3D visualization • outer & inner struts
+        </h2>
+        <button
+          id="closeFullscreen"
+          style="
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 20px;
+          "
+        >
+          ✕
+        </button>
+      </div>
+      <div class="modal-content">
+        <canvas id="fullscreenCanvas"></canvas>
+        <div class="controls">
+          <button id="resetViewFs">Reset view</button>
+          <button id="topViewFs">Top view</button>
+          <button id="sideViewFs">Side view</button>
+          <label class="checkbox-label">
+            <input type="checkbox" id="showOuterFs" checked />
+            <span>Show outer struts</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="showInnerFs" checked />
+            <span>Show inner struts</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="showVerticesFs" checked />
+            <span>Show vertices</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const warmPalette = [
+        "#ff6b6b",
+        "#ffa94d",
+        "#ffd43b",
+        "#fab005",
+        "#ff922b",
+      ];
+      const coolPalette = [
+        "#74c0fc",
+        "#4dabf7",
+        "#3bc9db",
+        "#69db7c",
+        "#38d9a9",
+      ];
+
+      let state = {
+        outerDiameter: 24,
+        unit: "ft",
+        thickness: 0.125,
+        frequency: 4,
+        tolerance: 0.001,
+        cut: "hemisphere",
+        result: null,
+        visData: null,
+        showVertices: true,
+        showOuter: true,
+        showInner: true,
+        viewState: {
+          rotationX: -0.3,
+          rotationY: 0.25,
+          zoom: 0.8,
+          panX: 0,
+          panY: 0,
+        },
+        isDragging: false,
+        lastPointer: { x: 0, y: 0 },
+        activeCanvas: null,
+        activeCtx: null,
+      };
+
+      // Math utilities
+      function norm([x, y, z]) {
+        return Math.hypot(x, y, z);
+      }
+
+      function add(a, b) {
+        return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+      }
+
+      function sub(a, b) {
+        return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+      }
+
+      function mul(v, s) {
+        return [v[0] * s, v[1] * s, v[2] * s];
+      }
+
+      function dot(a, b) {
+        return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+      }
+
+      function cross(a, b) {
+        return [
+          a[1] * b[2] - a[2] * b[1],
+          a[2] * b[0] - a[0] * b[2],
+          a[0] * b[1] - a[1] * b[0],
+        ];
+      }
+
+      function unitVec(v) {
+        const n = norm(v);
+        return n ? [v[0] / n, v[1] / n, v[2] / n] : [0, 0, 0];
+      }
+
+      function rotateX([x, y, z], angle) {
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        return [x, y * cos - z * sin, y * sin + z * cos];
+      }
+
+      function rotateY([x, y, z], angle) {
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        return [x * cos + z * sin, y, -x * sin + z * cos];
+      }
+
+      function keyFor(v) {
+        const q = 1e6;
+        return `${Math.round(v[0] * q)}_${Math.round(v[1] * q)}_${Math.round(
+          v[2] * q
+        )}`;
+      }
+
+      function icosahedron() {
+        const t = (1 + Math.sqrt(5)) / 2;
+        const baseVerts = [
+          [-1, t, 0],
+          [1, t, 0],
+          [-1, -t, 0],
+          [1, -t, 0],
+          [0, -1, t],
+          [0, 1, t],
+          [0, -1, -t],
+          [0, 1, -t],
+          [t, 0, -1],
+          [t, 0, 1],
+          [-t, 0, -1],
+          [-t, 0, 1],
+        ];
+        const verts = baseVerts.map((coords) => unitVec(coords));
+        const faces = [
+          [0, 11, 5],
+          [0, 5, 1],
+          [0, 1, 7],
+          [0, 7, 10],
+          [0, 10, 11],
+          [1, 5, 9],
+          [5, 11, 4],
+          [11, 10, 2],
+          [10, 7, 6],
+          [7, 1, 8],
+          [3, 9, 4],
+          [3, 4, 2],
+          [3, 2, 6],
+          [3, 6, 8],
+          [3, 8, 9],
+          [4, 9, 5],
+          [2, 4, 11],
+          [6, 2, 10],
+          [8, 6, 7],
+          [9, 8, 1],
+        ];
+        return { verts, faces };
+      }
+
+      function subdivideFace(a, b, c, f) {
+        const points = [];
+        for (let i = 0; i <= f; i++) {
+          for (let j = 0; j <= f - i; j++) {
+            const k = f - i - j;
+            const p = unitVec(
+              add(add(mul(a, i / f), mul(b, j / f)), mul(c, k / f))
+            );
+            points.push(p);
+          }
+        }
+        const idx = (i, j) => (i * (f + 1) - (i * (i - 1)) / 2 + j) | 0;
+        const tris = [];
+        for (let i = 0; i < f; i++) {
+          for (let j = 0; j < f - i; j++) {
+            const v0 = idx(i, j);
+            const v1 = idx(i + 1, j);
+            const v2 = idx(i, j + 1);
+            tris.push([v0, v1, v2]);
+            if (j < f - i - 1) {
+              const v3 = idx(i + 1, j + 1);
+              tris.push([v1, v3, v2]);
+            }
+          }
+        }
+        return { points, tris };
+      }
+
+      function buildGeodesic(frequency) {
+        const { verts, faces } = icosahedron();
+        const globalVerts = [];
+        const vIndex = new Map();
+        const edges = new Set();
+        const triangles = [];
+
+        const addVertex = (p) => {
+          const key = keyFor(p);
+          if (vIndex.has(key)) return vIndex.get(key);
+          const idx = globalVerts.length;
+          globalVerts.push(p);
+          vIndex.set(key, idx);
+          return idx;
+        };
+
+        const addEdge = (i, j) => {
+          if (i === j) return;
+          const a = Math.min(i, j);
+          const b = Math.max(i, j);
+          edges.add(`${a}-${b}`);
+        };
+
+        for (const [ia, ib, ic] of faces) {
+          const { points, tris } = subdivideFace(
+            verts[ia],
+            verts[ib],
+            verts[ic],
+            frequency
+          );
+          const mapLocalToGlobal = points.map(addVertex);
+          for (const [p, q, r] of tris) {
+            const i = mapLocalToGlobal[p];
+            const j = mapLocalToGlobal[q];
+            const k = mapLocalToGlobal[r];
+            addEdge(i, j);
+            addEdge(j, k);
+            addEdge(k, i);
+            triangles.push([i, j, k]);
+          }
+        }
+
+        return { vertices: globalVerts, edges, triangles };
+      }
+
+      function filterByCut(vertices, edges, triangles, cut) {
+        if (cut === "full") return { vertices, edges, triangles };
+
+        const keep = new Set();
+        vertices.forEach((v, idx) => {
+          if (v[2] >= -1e-12) keep.add(idx);
+        });
+
+        const filteredEdges = new Set();
+        for (const e of edges) {
+          const [a, b] = e.split("-").map(Number);
+          if (keep.has(a) && keep.has(b)) filteredEdges.add(e);
+        }
+
+        const filteredTriangles = [];
+        for (const [i, j, k] of triangles) {
+          if (keep.has(i) && keep.has(j) && keep.has(k))
+            filteredTriangles.push([i, j, k]);
+        }
+
+        return { vertices, edges: filteredEdges, triangles: filteredTriangles };
+      }
+
+      function groupByTolerance(lengths, tol) {
+        const groups = [];
+        const sorted = [...lengths].sort((a, b) => a - b);
+        for (const value of sorted) {
+          const existing = groups.find((g) => Math.abs(g.rep - value) <= tol);
+          if (existing) {
+            existing.items.push(value);
+            existing.count += 1;
+            existing.rep =
+              (existing.rep * (existing.count - 1) + value) / existing.count;
+          } else {
+            groups.push({ rep: value, items: [value], count: 1, label: "" });
+          }
+        }
+        groups.forEach((g, idx) => {
+          g.label = String.fromCharCode(65 + idx);
+        });
+        return groups;
+      }
+
+      function edgeKey(i, j) {
+        return i < j ? `${i}-${j}` : `${j}-${i}`;
+      }
+
+      function faceNormal(a, b, c) {
+        return unitVec(cross(sub(b, a), sub(c, a)));
+      }
+
+      function computeDihedrals(vertices, triangles) {
+        const edgeFaces = new Map();
+        const faceData = triangles.map(([i, j, k]) => {
+          const a = vertices[i];
+          const b = vertices[j];
+          const c = vertices[k];
+          return { i, j, k, n: faceNormal(a, b, c) };
+        });
+
+        triangles.forEach(([i, j, k], fi) => {
+          const edges = [
+            [i, j],
+            [j, k],
+            [k, i],
+          ];
+          for (const [a, b] of edges) {
+            const key = edgeKey(a, b);
+            if (!edgeFaces.has(key)) edgeFaces.set(key, []);
+            edgeFaces.get(key).push(fi);
+          }
+        });
+
+        const edgeDihedral = new Map();
+        for (const [key, faces] of edgeFaces.entries()) {
+          if (faces.length === 2) {
+            const fA = faceData[faces[0]];
+            const fB = faceData[faces[1]];
+            const angle = Math.acos(Math.max(-1, Math.min(1, dot(fA.n, fB.n))));
+            edgeDihedral.set(key, angle);
+          } else {
+            edgeDihedral.set(key, 0);
+          }
+        }
+        return edgeDihedral;
+      }
+
+      function precisionForUnit(unit) {
+        if (unit === "mm") return 2;
+        if (unit === "m") return 4;
+        return 3;
+      }
+
+      function radiansToDegrees(radians) {
+        return (radians * 180) / Math.PI;
+      }
+
+      function findGroupLabel(length, groups, tol) {
+        let best = null;
+        let bestDiff = Infinity;
+        for (const g of groups) {
+          const diff = Math.abs(g.rep - length);
+          if (diff < bestDiff) {
+            bestDiff = diff;
+            best = g.label;
+          }
+        }
+        return best && bestDiff <= tol ? best : "?";
+      }
+
+      function compute() {
+        const dia = state.outerDiameter;
+        const freq = Math.max(1, Math.min(10, Math.round(state.frequency)));
+        const thick = Math.max(0, Math.abs(state.thickness));
+        const tol = Math.abs(state.tolerance);
+
+        if (!Number.isFinite(dia) || dia <= 0) {
+          document.getElementById("status").textContent =
+            "Enter a positive outer diameter.";
+          return;
+        }
+
+        const radiusOuter = dia / 2;
+        const radiusMid = Math.max(1e-9, radiusOuter - thick / 2);
+        const radiusInner = Math.max(1e-9, radiusOuter - thick);
+
+        const built = buildGeodesic(freq);
+        const filtered = filterByCut(
+          built.vertices,
+          built.edges,
+          built.triangles,
+          state.cut
+        );
+        const edgeDihedral = computeDihedrals(
+          filtered.vertices,
+          filtered.triangles
+        );
+
+        const edgeLengthMid = new Map();
+        for (const edge of filtered.edges) {
+          const [a, b] = edge.split("-").map(Number);
+          const chordUnit = norm(
+            sub(filtered.vertices[a], filtered.vertices[b])
+          );
+          edgeLengthMid.set(edge, chordUnit * radiusMid);
+        }
+
+        const groups = groupByTolerance(
+          Array.from(edgeLengthMid.values()),
+          tol
+        );
+        const edgeGroup = new Map();
+        for (const edge of filtered.edges) {
+          const length = edgeLengthMid.get(edge);
+          edgeGroup.set(edge, findGroupLabel(length, groups, tol));
+        }
+
+        const typeAggregates = new Map();
+        for (const edge of filtered.edges) {
+          const label = edgeGroup.get(edge);
+          const midLength = edgeLengthMid.get(edge);
+          const dihedral = edgeDihedral.get(edge) || 0;
+          const bevelRad = dihedral / 2;
+          const outerLength = midLength + thick * Math.tan(bevelRad);
+          const innerLength = Math.max(
+            0,
+            midLength - thick * Math.tan(bevelRad)
+          );
+          if (!typeAggregates.has(label)) {
+            typeAggregates.set(label, {
+              mid: 0,
+              outer: 0,
+              inner: 0,
+              bevel: 0,
+              qty: 0,
+            });
+          }
+          const record = typeAggregates.get(label);
+          record.mid += midLength;
+          record.outer += outerLength;
+          record.inner += innerLength;
+          record.bevel += bevelRad;
+          record.qty += 1;
+        }
+
+        const strutTypes = Array.from(typeAggregates.entries())
+          .map(([label, agg]) => {
+            const { qty } = agg;
+            return {
+              label,
+              mid: agg.mid / qty,
+              outer: agg.outer / qty,
+              inner: agg.inner / qty,
+              bevelDeg: radiansToDegrees(agg.bevel / qty),
+              qty,
+            };
+          })
+          .sort((a, b) => a.mid - b.mid);
+
+        const triangleMap = new Map();
+        for (const [i, j, k] of filtered.triangles) {
+          const labels = [
+            edgeGroup.get(edgeKey(i, j)),
+            edgeGroup.get(edgeKey(j, k)),
+            edgeGroup.get(edgeKey(k, i)),
+          ]
+            .sort()
+            .join("-");
+          const dihedrals = [
+            radiansToDegrees(edgeDihedral.get(edgeKey(i, j)) || 0),
+            radiansToDegrees(edgeDihedral.get(edgeKey(j, k)) || 0),
+            radiansToDegrees(edgeDihedral.get(edgeKey(k, i)) || 0),
+          ].sort((a, b) => a - b);
+          if (!triangleMap.has(labels)) {
+            triangleMap.set(labels, { count: 0, sums: [0, 0, 0] });
+          }
+          const entry = triangleMap.get(labels);
+          entry.count += 1;
+          entry.sums[0] += dihedrals[0];
+          entry.sums[1] += dihedrals[1];
+          entry.sums[2] += dihedrals[2];
+        }
+
+        const panelGroups = Array.from(triangleMap.entries())
+          .map(([signature, entry], index) => ({
+            label: `T${index + 1}`,
+            composition: signature.replaceAll("-", " + "),
+            count: entry.count,
+            dihedrals: entry.sums.map((sum) => sum / entry.count),
+          }))
+          .sort((a, b) => a.dihedrals[0] - b.dihedrals[0]);
+
+        state.result = {
+          strutTypes,
+          panelGroups,
+          summary: {
+            frequency: freq,
+            radiusOuter,
+            radiusMid,
+            radiusInner,
+            thickness: thick,
+            tolerance: tol,
+            totalStruts: filtered.edges.size,
+          },
+        };
+
+        state.visData = {
+          outerVerts: filtered.vertices.map((v) => mul(v, radiusOuter)),
+          innerVerts: filtered.vertices.map((v) => mul(v, radiusInner)),
+          edges: Array.from(filtered.edges),
+          edgeGroup,
+          strutGroups: groups,
+        };
+
+        state.viewState = {
+          rotationX: -0.3,
+          rotationY: 0.25,
+          zoom: 0.8,
+          panX: 0,
+          panY: 0,
+        };
+        document.getElementById("status").textContent = "Done";
+
+        updateUI();
+        render();
+      }
+
+      function updateUI() {
+        const result = state.result;
+        if (!result) return;
+
+        const prec = precisionForUnit(state.unit);
+        const { summary } = result;
+
+        document.getElementById("strutSummary").textContent =
+          `Frequency ${
+            summary.frequency
+          }V • Outer radius ${summary.radiusOuter.toFixed(prec)} ${
+            state.unit
+          } • ` +
+          `Mid radius ${summary.radiusMid.toFixed(prec)} ${state.unit} • ` +
+          `Inner radius ${summary.radiusInner.toFixed(prec)} ${state.unit} • ` +
+          `Thickness ${summary.thickness.toFixed(prec)} ${state.unit} • ` +
+          `${result.strutTypes.length} strut types`;
+
+        document.getElementById(
+          "panelSummary"
+        ).textContent = `${result.panelGroups.length} panel classes by edge composition.`;
+
+        // Strut table
+        let strutHtml =
+          "<table><thead><tr><th>Type</th><th>Centerline</th><th>Outer</th><th>Inner</th><th>Bevel</th><th>Qty</th></tr></thead><tbody>";
+        result.strutTypes.forEach((s) => {
+          strutHtml += `<tr>
+          <td><strong>${s.label}</strong></td>
+          <td><code>${s.mid.toFixed(prec)}</code></td>
+          <td><code>${s.outer.toFixed(prec)}</code></td>
+          <td><code>${s.inner.toFixed(prec)}</code></td>
+          <td>${s.bevelDeg.toFixed(2)}°</td>
+          <td>${s.qty}</td>
+        </tr>`;
+        });
+        strutHtml += "</tbody></table>";
+        document.getElementById("strutTable").innerHTML = strutHtml;
+
+        // Panel table
+        let panelHtml =
+          "<table><thead><tr><th>Panel</th><th>Edges</th><th>Panels</th><th>Dihedrals</th></tr></thead><tbody>";
+        result.panelGroups.forEach((panel) => {
+          const dihedrals = panel.dihedrals
+            .map((d) => `<code>${d.toFixed(2)}°</code>`)
+            .join(" ");
+          panelHtml += `<tr>
+          <td><strong>${panel.label}</strong></td>
+          <td>${panel.composition}</td>
+          <td>${panel.count}</td>
+          <td>${dihedrals}</td>
+        </tr>`;
+        });
+        panelHtml += "</tbody></table>";
+        document.getElementById("panelTable").innerHTML = panelHtml;
+
+        // Legend
+        let legendHtml = "";
+        state.visData.strutGroups.forEach((group, index) => {
+          legendHtml += `<div class="legend-item">
+          <div class="strut-colors">
+            <div class="strut-color" style="background:${
+              warmPalette[index % warmPalette.length]
+            }"></div>
+            <div class="strut-color" style="background:${
+              coolPalette[index % coolPalette.length]
+            }"></div>
+          </div>
+          <span>${group.label}</span>
+        </div>`;
+        });
+        document.getElementById("legend").innerHTML = legendHtml;
+      }
+
+      function projectPoint(point, width, height, view) {
+        let rotated = rotateX(point, view.rotationX);
+        rotated = rotateY(rotated, view.rotationY);
+        const scale = Math.min(width, height) * 0.05 * view.zoom;
+        const x = width / 2 + rotated[0] * scale + view.panX;
+        const y = height / 2 - rotated[1] * scale + view.panY;
+        return { x, y, z: rotated[2] };
+      }
+
+      function render() {
+        if (!state.activeCanvas || !state.activeCtx || !state.visData) return;
+
+        const canvas = state.activeCanvas;
+        const ctx = state.activeCtx;
+        const rect = canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        const width = rect.width;
+        const height = rect.height;
+
+        ctx.clearRect(0, 0, width, height);
+
+        const projectedOuter = state.visData.outerVerts.map((v) =>
+          projectPoint(v, width, height, state.viewState)
+        );
+        const projectedInner = state.visData.innerVerts.map((v) =>
+          projectPoint(v, width, height, state.viewState)
+        );
+
+        const drawEdges = (proj, palette) => {
+          const items = state.visData.edges.map((edge) => {
+            const [a, b] = edge.split("-").map(Number);
+            const p1 = proj[a];
+            const p2 = proj[b];
+            const z = (p1.z + p2.z) / 2;
+            const label = state.visData.edgeGroup.get(edge);
+            const index = state.visData.strutGroups.findIndex(
+              (g) => g.label === label
+            );
+            const color = index >= 0 ? palette[index % palette.length] : "#666";
+            return { p1, p2, z, color };
+          });
+          items.sort((a, b) => a.z - b.z);
+          ctx.lineWidth = 2;
+          ctx.lineCap = "round";
+          items.forEach(({ p1, p2, color }) => {
+            ctx.strokeStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+          });
+        };
+
+        if (state.showOuter) {
+          drawEdges(projectedOuter, warmPalette);
+        }
+        if (state.showInner) {
+          drawEdges(projectedInner, coolPalette);
+        }
+
+        if (state.showVertices) {
+          ctx.fillStyle = "rgba(238, 242, 255, 0.85)";
+          projectedOuter.forEach((p) => {
+            if (Number.isFinite(p.x) && Number.isFinite(p.y)) {
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          });
+        }
+      }
+
+      function setupCanvas(canvas) {
+        state.activeCanvas = canvas;
+        state.activeCtx = canvas.getContext("2d");
+
+        canvas.addEventListener("mousedown", (e) => {
+          const rect = canvas.getBoundingClientRect();
+          state.lastPointer = {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top,
+          };
+          state.isDragging = true;
+        });
+
+        canvas.addEventListener("mousemove", (e) => {
+          if (!state.isDragging) return;
+          const rect = canvas.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          const dx = x - state.lastPointer.x;
+          const dy = y - state.lastPointer.y;
+          state.viewState.rotationY += dx * 0.01;
+          state.viewState.rotationX += dy * 0.01;
+          state.lastPointer = { x, y };
+          render();
+        });
+
+        canvas.addEventListener("wheel", (e) => {
+          e.preventDefault();
+          const factor = e.deltaY > 0 ? 0.9 : 1.1;
+          state.viewState.zoom = Math.max(
+            0.02,
+            Math.min(12, state.viewState.zoom * factor)
+          );
+          render();
+        });
+
+        canvas.addEventListener("touchstart", (e) => {
+          e.preventDefault();
+          if (e.touches.length !== 1) return;
+          const rect = canvas.getBoundingClientRect();
+          const touch = e.touches[0];
+          state.lastPointer = {
+            x: touch.clientX - rect.left,
+            y: touch.clientY - rect.top,
+          };
+          state.isDragging = true;
+        });
+
+        canvas.addEventListener("touchmove", (e) => {
+          e.preventDefault();
+          if (!state.isDragging || e.touches.length !== 1) return;
+          const rect = canvas.getBoundingClientRect();
+          const touch = e.touches[0];
+          const x = touch.clientX - rect.left;
+          const y = touch.clientY - rect.top;
+          const dx = x - state.lastPointer.x;
+          const dy = y - state.lastPointer.y;
+          state.viewState.rotationY += dx * 0.01;
+          state.viewState.rotationX += dy * 0.01;
+          state.lastPointer = { x, y };
+          render();
+        });
+
+        render();
+      }
+
+      function downloadCsv(filename, rows) {
+        const csv = rows.map((row) => row.join(",")).join("\n");
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      // Event listeners
+      document
+        .getElementById("outerDiameter")
+        .addEventListener("input", (e) => {
+          state.outerDiameter = parseFloat(e.target.value);
+          compute();
+        });
+
+      document.getElementById("unit").addEventListener("change", (e) => {
+        state.unit = e.target.value;
+        document.getElementById("toleranceUnit").textContent = e.target.value;
+        compute();
+      });
+
+      document.getElementById("thickness").addEventListener("input", (e) => {
+        state.thickness = parseFloat(e.target.value);
+        compute();
+      });
+
+      document.getElementById("frequency").addEventListener("input", (e) => {
+        state.frequency = parseFloat(e.target.value);
+        compute();
+      });
+
+      document.getElementById("cut").addEventListener("change", (e) => {
+        state.cut = e.target.value;
+        compute();
+      });
+
+      document.getElementById("tolerance").addEventListener("input", (e) => {
+        state.tolerance = parseFloat(e.target.value);
+        compute();
+      });
+
+      document
+        .getElementById("showVertices")
+        .addEventListener("change", (e) => {
+          state.showVertices = e.target.checked;
+          document.getElementById("showVerticesFs").checked = e.target.checked;
+          render();
+        });
+
+      document
+        .getElementById("showVerticesFs")
+        .addEventListener("change", (e) => {
+          state.showVertices = e.target.checked;
+          document.getElementById("showVertices").checked = e.target.checked;
+          render();
+        });
+
+      document.getElementById("showOuter").addEventListener("change", (e) => {
+        state.showOuter = e.target.checked;
+        document.getElementById("showOuterFs").checked = e.target.checked;
+        render();
+      });
+
+      document.getElementById("showOuterFs").addEventListener("change", (e) => {
+        state.showOuter = e.target.checked;
+        document.getElementById("showOuter").checked = e.target.checked;
+        render();
+      });
+
+      document.getElementById("showInner").addEventListener("change", (e) => {
+        state.showInner = e.target.checked;
+        document.getElementById("showInnerFs").checked = e.target.checked;
+        render();
+      });
+
+      document.getElementById("showInnerFs").addEventListener("change", (e) => {
+        state.showInner = e.target.checked;
+        document.getElementById("showInner").checked = e.target.checked;
+        render();
+      });
+
+      document.getElementById("resetView").addEventListener("click", () => {
+        state.viewState = {
+          rotationX: -0.3,
+          rotationY: 0.25,
+          zoom: 0.8,
+          panX: 0,
+          panY: 0,
+        };
+        render();
+      });
+
+      document.getElementById("topView").addEventListener("click", () => {
+        state.viewState.rotationX = 0;
+        state.viewState.rotationY = 0;
+        render();
+      });
+
+      document.getElementById("sideView").addEventListener("click", () => {
+        state.viewState.rotationX = -Math.PI / 2;
+        state.viewState.rotationY = 0;
+        render();
+      });
+
+      document.getElementById("resetViewFs").addEventListener("click", () => {
+        state.viewState = {
+          rotationX: -0.3,
+          rotationY: 0.25,
+          zoom: 0.8,
+          panX: 0,
+          panY: 0,
+        };
+        render();
+      });
+
+      document.getElementById("topViewFs").addEventListener("click", () => {
+        state.viewState.rotationX = 0;
+        state.viewState.rotationY = 0;
+        render();
+      });
+
+      document.getElementById("sideViewFs").addEventListener("click", () => {
+        state.viewState.rotationX = -Math.PI / 2;
+        state.viewState.rotationY = 0;
+        render();
+      });
+
+      document
+        .getElementById("downloadStruts")
+        .addEventListener("click", () => {
+          if (!state.result) return;
+          const prec = precisionForUnit(state.unit);
+          const header = [
+            "Type",
+            `Centerline (${state.unit})`,
+            `Outer (${state.unit})`,
+            `Inner (${state.unit})`,
+            "Bevel (deg)",
+            "Quantity",
+          ];
+          const rows = state.result.strutTypes.map((s) => [
+            s.label,
+            s.mid.toFixed(prec),
+            s.outer.toFixed(prec),
+            s.inner.toFixed(prec),
+            s.bevelDeg.toFixed(2),
+            s.qty,
+          ]);
+          downloadCsv(
+            `geodesic_struts_outer_inner_${state.outerDiameter}${state.unit}.csv`,
+            [header, ...rows]
+          );
+        });
+
+      document
+        .getElementById("downloadPanels")
+        .addEventListener("click", () => {
+          if (!state.result) return;
+          const header = [
+            "Panel",
+            "Panels",
+            "Edges",
+            "Dihedral 1 (deg)",
+            "Dihedral 2 (deg)",
+            "Dihedral 3 (deg)",
+          ];
+          const rows = state.result.panelGroups.map((panel) => [
+            panel.label,
+            String(panel.count),
+            panel.composition,
+            ...panel.dihedrals.map((d) => d.toFixed(2)),
+          ]);
+          downloadCsv(
+            `geodesic_panel_dihedrals_${state.outerDiameter}${state.unit}.csv`,
+            [header, ...rows]
+          );
+        });
+
+      document
+        .getElementById("openFullscreen")
+        .addEventListener("click", () => {
+          document.getElementById("fullscreenModal").classList.add("active");
+          setTimeout(() => {
+            setupCanvas(document.getElementById("fullscreenCanvas"));
+          }, 100);
+        });
+
+      document
+        .getElementById("closeFullscreen")
+        .addEventListener("click", () => {
+          document.getElementById("fullscreenModal").classList.remove("active");
+          setupCanvas(document.getElementById("canvas"));
+        });
+
+      window.addEventListener("mouseup", () => {
+        state.isDragging = false;
+      });
+
+      window.addEventListener("touchend", () => {
+        state.isDragging = false;
+      });
+
+      window.addEventListener("resize", () => {
+        render();
+      });
+
+      // Initialize
+      setupCanvas(document.getElementById("canvas"));
+      compute();
+    </script>
+  </body>
+</html>
